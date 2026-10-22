@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -18,6 +18,21 @@ import {
 } from 'react-icons/fi'
 
 export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={(
+        <div className="min-h-screen bg-[#091540] text-[#FFF9F2] flex items-center justify-center gap-3">
+          <FiLoader className="animate-spin text-[#F2842F]" size={20} />
+          <span className="text-sm font-semibold">Loading registration...</span>
+        </div>
+      )}
+    >
+      <RegisterForm />
+    </Suspense>
+  )
+}
+
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = searchParams.get('redirect') || '/shop'

@@ -4,21 +4,14 @@ import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { addToCart, getCart } from '@/lib/cart'
-import { 
-  FiShoppingCart, 
-  FiSearch, 
-  FiPackage, 
-  FiCheck, 
-  FiAlertCircle, 
-  FiX 
+import {
+  FiShoppingCart,
+  FiSearch,
+  FiPackage,
+  FiCheck,
+  FiAlertCircle,
+  FiX
 } from 'react-icons/fi'
-
-// Theme Configuration
-const theme = {
-  Orange: "#F2842F",
-  White: "#FFF9F2",
-  Darkblue: "#091540",
-} as const;
 
 interface Product {
   id: string
@@ -273,7 +266,7 @@ export default function ShopPage() {
                   key={product.id}
                   className="bg-[#0d1a45] border border-[#1e3073] rounded-2xl p-5 flex flex-col justify-between hover:border-[#F2842F]/40 transition-all shadow-md group"
                 >
-                  <div>
+                  <Link href={`/shop/${product.id}`} className="block">
                     {/* Product Image Thumbnail */}
                     <div className="w-full h-44 bg-[#0f1d4f] border border-[#1e3073] rounded-xl overflow-hidden mb-4 flex items-center justify-center text-[#FFF9F2]/30 group-hover:border-[#F2842F]/30 transition">
                       {product.image_url ? (
@@ -312,7 +305,7 @@ export default function ShopPage() {
                     <p className="text-xs text-[#FFF9F2]/60 line-clamp-2 mb-6 leading-relaxed">
                       {product.description || 'No product description available.'}
                     </p>
-                  </div>
+                  </Link>
 
                   <div className="pt-4 border-t border-[#1e3073]/60 flex items-center justify-between gap-2">
                     <div>

@@ -15,7 +15,6 @@ import {
   FiCheckCircle,
   FiX,
   FiFilter,
-  FiDollarSign,
   FiUser,
   FiMail,
   FiCalendar
@@ -26,6 +25,10 @@ export interface Order {
   id: string
   customer_name: string
   customer_email: string
+  phone?: string
+  address?: string
+  city?: string
+  notes?: string
   status: string
   total_price: number | string
   created_at: string
@@ -73,9 +76,10 @@ export default function OrdersPage() {
 
       if (fetchError) throw fetchError
       setOrders(data || [])
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching orders:', err)
-      setError('Failed to fetch orders. Please check your network connection.')
+      const msg = err instanceof Error ? err.message : 'Failed to fetch orders.'
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -91,7 +95,7 @@ export default function OrdersPage() {
 
       if (fetchError) throw fetchError
       setOrderItems(data || [])
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching order items:', err)
     } finally {
       setItemsLoading(false)
@@ -118,9 +122,10 @@ export default function OrdersPage() {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating status:', err)
-      alert(`Failed to update order status: ${err.message || 'Unknown error'}`)
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to update order status: ${msg}`)
     } finally {
       setUpdatingId(null)
     }
@@ -132,11 +137,11 @@ export default function OrdersPage() {
       const query = searchQuery.toLowerCase().trim()
       const matchesSearch = 
         !query ||
-        order.id.toLowerCase().includes(query) ||
+        (order.id && order.id.toLowerCase().includes(query)) ||
         (order.customer_name && order.customer_name.toLowerCase().includes(query)) ||
         (order.customer_email && order.customer_email.toLowerCase().includes(query))
 
-      const matchesStatus = filterStatus === 'all' || order.status?.toLowerCase() === filterStatus.toLowerCase()
+      const matchesStatus = filterStatus === 'all' || (order.status && order.status.toLowerCase() === filterStatus.toLowerCase())
 
       return matchesSearch && matchesStatus
     })
@@ -153,12 +158,15 @@ export default function OrdersPage() {
   const statuses = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
   if (authLoading || !isAdmin) {
-  return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
-      Checking access...
-    </div>
-  )
-}
+    return (
+      <div className="min-h-screen bg-[#091540] flex items-center justify-center text-[#FFF9F2]">
+        <div className="flex items-center gap-3 bg-[#0d1a45] border border-[#1e3073] px-6 py-4 rounded-2xl shadow-xl">
+          <FiRefreshCw className="animate-spin text-[#F2842F]" size={20} />
+          <span className="text-sm font-semibold">Checking access privileges...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#091540] text-[#FFF9F2] font-sans selection:bg-[#F2842F]/30 selection:text-[#FFF9F2]">
@@ -251,7 +259,6 @@ export default function OrdersPage() {
 
         {/* Search Bar & Status Filters */}
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
-          {/* Search Input */}
           <div className="relative flex-1 max-w-lg">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFF9F2]/40" size={18} />
             <input
@@ -271,10 +278,9 @@ export default function OrdersPage() {
             )}
           </div>
 
-          {/* Status Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
             <div className="flex items-center gap-1.5 min-w-max">
-              <span className="text-xs text-[#FFF9F2]/40 mr-1 hidden xl:inline flex items-center gap-1">
+              <span className="text-xs text-[#FFF9F2]/40 mr-1 hidden xl:flex items-center gap-1">
                 <FiFilter size={12} /> Filter:
               </span>
               {statuses.map((status) => {
@@ -290,11 +296,11 @@ export default function OrdersPage() {
                     }`}
                   >
                     {status}
-                    {status === 'all' ? (
+                    {status === 'all' && (
                       <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-[#FFF9F2]/20 text-white' : 'bg-[#15255e] text-[#FFF9F2]/60'}`}>
                         {orders.length}
                       </span>
-                    ) : null}
+                    )}
                   </button>
                 )
               })}
@@ -302,22 +308,7 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* Active Filter Info Footer Bar */}
-        {(searchQuery || filterStatus !== 'all') && (
-          <div className="flex items-center justify-between bg-[#0f1d4f]/60 px-4 py-2 rounded-xl border border-[#1e3073]/50 text-xs text-[#FFF9F2]/70">
-            <span>
-              Showing <strong className="text-[#FFF9F2]">{filteredOrders.length}</strong> of <strong className="text-[#FFF9F2]">{orders.length}</strong> orders
-            </span>
-            <button 
-              onClick={() => { setSearchQuery(''); setFilterStatus('all'); }}
-              className="text-[#F2842F] hover:underline font-medium text-xs"
-            >
-              Clear filters
-            </button>
-          </div>
-        )}
-
-        {/* Content Section: Loading Skeletons vs Empty vs Data */}
+        {/* Content Section */}
         {loading ? (
           <SkeletonOrdersList />
         ) : filteredOrders.length === 0 ? (
@@ -327,7 +318,7 @@ export default function OrdersPage() {
           />
         ) : (
           <>
-            {/* 1. Mobile & Tablet Card Layout (Visible below lg break) */}
+            {/* Mobile & Tablet Card View */}
             <div className="block lg:hidden space-y-4">
               {filteredOrders.map((order) => {
                 const price = Number(order.total_price) || 0
@@ -339,7 +330,6 @@ export default function OrdersPage() {
                     key={order.id} 
                     className="bg-[#0d1a45] border border-[#1e3073] rounded-2xl p-4 space-y-4 shadow-sm hover:border-[#1e3073]/90 transition"
                   >
-                    {/* Header: ID & View Button */}
                     <div className="flex items-center justify-between border-b border-[#1e3073]/60 pb-3">
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-1 bg-[#15255e] text-[#FFF9F2]/90 font-mono text-xs font-semibold rounded-lg border border-[#1e3073]">
@@ -358,7 +348,6 @@ export default function OrdersPage() {
                       </button>
                     </div>
 
-                    {/* Customer Info */}
                     <div className="grid grid-cols-1 gap-2 text-xs">
                       <div className="flex items-center gap-2 text-[#FFF9F2]">
                         <FiUser className="text-[#F2842F] shrink-0" size={14} />
@@ -370,7 +359,6 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Footer: Price & Status Selector */}
                     <div className="flex items-center justify-between pt-2 border-t border-[#1e3073]/60 gap-3">
                       <div>
                         <p className="text-[10px] uppercase text-[#FFF9F2]/40 font-bold">Total Amount</p>
@@ -390,7 +378,7 @@ export default function OrdersPage() {
               })}
             </div>
 
-            {/* 2. Desktop Data Table (Visible lg and up) */}
+            {/* Desktop Table View */}
             <div className="hidden lg:block bg-[#0d1a45] rounded-2xl border border-[#1e3073] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -439,7 +427,6 @@ export default function OrdersPage() {
                             <button
                               onClick={() => handleViewDetails(order)}
                               className="px-3 py-1.5 bg-[#F2842F]/10 hover:bg-[#F2842F]/20 text-[#F2842F] border border-[#F2842F]/30 rounded-xl transition inline-flex items-center gap-1.5 text-xs font-semibold"
-                              title="View order line items"
                             >
                               <FiEye size={15} />
                               <span>Details</span>
@@ -456,21 +443,19 @@ export default function OrdersPage() {
         )}
       </main>
 
-      {/* Order Details Modal */}
+      {/* Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
           orderItems={orderItems}
           loading={itemsLoading}
           onClose={() => setSelectedOrder(null)}
-          onStatusChange={handleUpdateStatus}
         />
       )}
     </div>
   )
 }
 
-// Custom Status Select Dropdown with Color Indicators
 function StatusSelect({ 
   status, 
   disabled, 
@@ -488,6 +473,7 @@ function StatusSelect({
         value={normalizedStatus}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
+        aria-label="Update order status"
         className={`w-full appearance-none px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer border border-[#1e3073] focus:outline-none focus:ring-1 focus:ring-[#F2842F] transition disabled:opacity-50 ${getStatusSelectStyle(normalizedStatus)}`}
       >
         <option value="pending" className="bg-[#0d1a45] text-amber-200 font-semibold">Pending</option>
@@ -500,7 +486,6 @@ function StatusSelect({
   )
 }
 
-// Skeleton Loader Component
 function SkeletonOrdersList() {
   return (
     <div className="space-y-4">
@@ -526,7 +511,6 @@ function SkeletonOrdersList() {
   )
 }
 
-// Empty State Component
 function EmptyOrdersState({ hasOrders, onClear }: { hasOrders: boolean; onClear: () => void }) {
   return (
     <div className="text-center py-16 px-6 bg-[#0d1a45] rounded-2xl border border-[#1e3073] max-w-md mx-auto shadow-lg">
@@ -553,7 +537,6 @@ function EmptyOrdersState({ hasOrders, onClear }: { hasOrders: boolean; onClear:
   )
 }
 
-// Helpers
 function formatDateSafely(dateString?: string) {
   if (!dateString) return 'N/A'
   try {

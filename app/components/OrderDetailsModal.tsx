@@ -11,7 +11,7 @@ interface Order {
   city?: string | null
   notes?: string | null
   status: string
-  total_price: number
+  total_price: number | string
   created_at: string
 }
 
@@ -28,10 +28,11 @@ interface OrderItem {
 interface OrderDetailsModalProps {
   order: Order
   orderItems: OrderItem[]
+  loading: boolean
   onClose: () => void
 }
 
-export default function OrderDetailsModal({ order, orderItems, onClose }: OrderDetailsModalProps) {
+export default function OrderDetailsModal({ order, orderItems, loading, onClose }: OrderDetailsModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -84,7 +85,9 @@ export default function OrderDetailsModal({ order, orderItems, onClose }: OrderD
           <div className="bg-gray-700 rounded-lg p-4">
             <h3 className="font-semibold mb-3">Items</h3>
             <div className="space-y-2">
-              {orderItems.length === 0 ? (
+              {loading ? (
+                <p className="text-gray-400 text-sm">Loading items...</p>
+              ) : orderItems.length === 0 ? (
                 <p className="text-gray-400 text-sm">No items in this order</p>
               ) : (
                 orderItems.map(item => (
